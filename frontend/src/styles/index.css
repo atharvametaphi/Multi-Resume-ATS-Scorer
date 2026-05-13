@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 20% 98%;
+  --foreground: 224 46% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 224 46% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 224 46% 14%;
+  --primary: 238 83% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 238 83% 67%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 220 23% 95%;
+  --muted-foreground: 217 12% 42%;
+  --accent: 238 83% 67%;
+  --accent-foreground: 0 0% 100%;
+  --border: 220 14% 86%;
+  --input: 220 14% 86%;
+  --ring: 238 83% 67%;
+  --success: 238 83% 67%;
+  --warning: 238 83% 67%;
+  --danger: 238 83% 67%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html.dark {
+  --background: 223 49% 8%;
+  --foreground: 220 33% 98%;
+  --card: 221 39% 11%;
+  --card-foreground: 220 33% 98%;
+  --popover: 221 39% 11%;
+  --popover-foreground: 220 33% 98%;
+  --primary: 238 83% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 238 83% 67%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 215 28% 17%;
+  --muted-foreground: 220 9% 65%;
+  --accent: 238 83% 67%;
+  --accent-foreground: 0 0% 100%;
+  --border: 0 0% 100% / 0.06;
+  --input: 0 0% 100% / 0.06;
+  --ring: 238 83% 67%;
+  --success: 238 83% 67%;
+  --warning: 238 83% 67%;
+  --danger: 238 83% 67%;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  min-height: 100vh;
+  text-rendering: geometricPrecision;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-changing,
+  html.theme-changing *,
+  html.theme-changing *::before,
+  html.theme-changing *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .enterprise-grid {
+    @apply grid gap-6;
+  }
+}

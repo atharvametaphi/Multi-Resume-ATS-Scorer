@@ -1,0 +1,28 @@
+Senior Backend Engineer (Python/FastAPI)
+
+Role Summary
+We are looking for a backend engineer to design and scale API services for analytics and workflow automation products.
+
+Required Skills
+- Python
+- FastAPI
+- SQL
+- Docker
+- AWS
+- REST API design
+- Unit testing with pytest
+
+Preferred Skills
+- React and TypeScript familiarity
+- NLP experience using spaCy or transformer-based workflows
+- CI/CD pipelines
+
+Experience
+- 3+ years building production backend services
+- Experience with relational databases (PostgreSQL or SQLite)
+- Strong understanding of API security and performance tuning
+
+Responsibilities
+- Build and maintain API endpoints for resume parsing and scoring
+- Collaborate with frontend teams to support dashboard analytics
+- Write clean, testable code and maintain documentation
