@@ -7,14 +7,27 @@
 - `services/parser_service.py`: parses sections and skills using taxonomy + spaCy-assisted keywording.
 - `services/scoring_service.py`: computes weighted ATS score and match lists.
 - `services/suggestion_service.py`: rule-based ATS optimization suggestions.
-- `services/report_service.py`: creates downloadable PDF reports.
-- `repositories/analysis_repository.py`: SQLite persistence for lightweight metadata.
-- `services/storage_service.py`: JSON artifact persistence and storage directory management.
+- `services/report_service.py`: creates downloadable PDF reports in-memory.
+- `repositories/analysis_repository.py`: MongoDB + GridFS persistence for analysis artifacts.
+- `db/mongodb.py`: Mongo connection bootstrap, schema validators, and indexes.
 
-### Hybrid Cache Model
-- SQLite stores summary metadata and score snapshots.
-- Full analysis payload is persisted to `storage/analyses/<analysis_id>.json`.
-- PDF report is persisted to `storage/reports/<analysis_id>.pdf`.
+### MongoDB Schema (`ATS` database)
+- Collection `job_descriptions`:
+  - `jd_id` (unique string), `source_type`, `source_name`, `text`, `keywords[]`, `created_at`
+- Collection `resumes`:
+  - `resume_id` (unique string), `analysis_id`, `original_filename`, `stored_filename`
+  - `file_id` (GridFS ObjectId), `content_type`, `size_bytes`, `extracted_text`, `created_at`
+- Collection `reports`:
+  - `report_id` (unique string), `analysis_id` (unique), `filename`
+  - `file_id` (GridFS ObjectId), `content_type`, `size_bytes`, `created_at`
+- Collection `analyses`:
+  - `analysis_id` (unique string), `resume_id`, `jd_id`, `report_id`
+  - `resume_filename`, `jd_source`, `ats_score`, `score_breakdown`
+  - `matched_skills_preview`, `missing_skills_preview`, `payload`, `created_at`
+
+### File Artifact Storage
+- Resume binaries are stored in GridFS with the exact uploaded filename.
+- Generated PDF reports are stored in GridFS and streamed by `/analysis/{analysis_id}/report`.
 
 ## Frontend (React + TypeScript)
 - `features/upload`: drag-and-drop resume upload and JD inputs.

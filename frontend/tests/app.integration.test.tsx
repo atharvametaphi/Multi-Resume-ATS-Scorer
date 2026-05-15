@@ -3,8 +3,9 @@ import { vi } from "vitest";
 
 import App from "../src/App";
 
-const { analyzeResumeMock } = vi.hoisted(() => ({
-  analyzeResumeMock: vi.fn()
+const { analyzeResumeMock, fetchJobDescriptionsMock } = vi.hoisted(() => ({
+  analyzeResumeMock: vi.fn(),
+  fetchJobDescriptionsMock: vi.fn()
 }));
 
 vi.mock("../src/services/api", async () => {
@@ -12,12 +13,22 @@ vi.mock("../src/services/api", async () => {
   return {
     ...actual,
     analyzeResume: analyzeResumeMock,
+    fetchJobDescriptions: fetchJobDescriptionsMock,
     getReportDownloadUrl: (path: string) => `http://localhost:8000${path}`
   };
 });
 
 describe("App integration", () => {
   it("analyzes resume and renders recruiter analysis workflow", async () => {
+    fetchJobDescriptionsMock.mockResolvedValueOnce([
+      {
+        id: "qa-engineer",
+        title: "QA Engineer / Software Test Engineer",
+        jdText: "Required skills: Python, Postman, API Testing.",
+        requiredSkills: ["Python", "Postman", "API Testing"]
+      }
+    ]);
+
     analyzeResumeMock.mockResolvedValueOnce({
       analysis_id: "abc123",
       ats_score: 82,
@@ -52,6 +63,10 @@ describe("App integration", () => {
     });
     fireEvent.change(resumeInput as HTMLInputElement, { target: { files: [resumeFile] } });
 
+    await waitFor(() => {
+      expect(screen.getByText(/Select Job Role/i)).toBeInTheDocument();
+    });
+
     fireEvent.click(screen.getByRole("button", { name: /Analyze Candidates/i }));
 
     await waitFor(() => {
@@ -59,7 +74,8 @@ describe("App integration", () => {
     });
 
     expect(analyzeResumeMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/Step 3 - Candidate Comparison/i)).toBeInTheDocument();
+    expect(screen.getByText(/Candidate Comparison/i)).toBeInTheDocument();
+    expect(screen.getByText(/Candidate Insights/i)).toBeInTheDocument();
     expect(screen.getByText(/ATS Breakdown/i)).toBeInTheDocument();
     expect(screen.getByText(/Download PDF Report/i)).toBeInTheDocument();
   });

@@ -1,23 +1,20 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
 from uuid import uuid4
 
 from fastapi import UploadFile
 
 from app.core.config import get_settings
 from app.core.exceptions import InvalidFileError, MissingJobDescriptionError
-from app.models.analysis_record import AnalysisRecord
 from app.repositories.analysis_repository import AnalysisRepository
-from app.schemas.analysis import AnalysisResponse, AnalysisSummaryResponse, ParsedSections, ScoreBreakdown
+from app.schemas.analysis import AnalysisResponse, AnalysisSummaryResponse, ScoreBreakdown
 from app.services.extraction_service import ExtractionService
 from app.services.parser_service import ParserService
 from app.services.report_service import ReportService
 from app.services.scoring_service import ScoringService
-from app.services.storage_service import StorageService
 from app.services.suggestion_service import SuggestionService
-from app.utils.file_utils import ensure_allowed_extension, read_upload_bytes, save_upload_bytes
+from app.utils.file_utils import ensure_allowed_extension, read_upload_bytes
 
 
 class AnalysisService:
@@ -27,10 +24,8 @@ class AnalysisService:
         self.parser = ParserService()
         self.scorer = ScoringService()
         self.suggester = SuggestionService()
-        self.storage = StorageService()
         self.reporter = ReportService()
         self.repo = AnalysisRepository()
-        self.storage.ensure_storage_dirs()
 
     async def analyze(
         self,
@@ -43,30 +38,24 @@ class AnalysisService:
 
         resume_content = await read_upload_bytes(resume_file, self.settings.max_upload_size_mb)
         ensure_allowed_extension(resume_file.filename, {".pdf", ".docx"})
-        resume_path = save_upload_bytes(
-            content=resume_content,
-            original_filename=resume_file.filename,
-            destination_dir=self.settings.upload_absolute_dir,
-        )
         try:
-            resume_text = self.extractor.extract_text(resume_path)
+            resume_text = self.extractor.extract_text_from_bytes(resume_content, resume_file.filename)
         except Exception as exc:
             raise InvalidFileError("Could not parse the uploaded resume file.") from exc
 
         jd_source = "manual_text"
+        jd_source_name: str | None = None
+        jd_source_type = "manual_text"
         if jd_text and jd_text.strip():
             resolved_jd_text = jd_text.strip()
         elif jd_file and jd_file.filename:
             jd_source = jd_file.filename
+            jd_source_name = jd_file.filename
+            jd_source_type = "file_upload"
             jd_content = await read_upload_bytes(jd_file, self.settings.max_upload_size_mb)
             ensure_allowed_extension(jd_file.filename, {".pdf", ".docx", ".txt"})
-            jd_path = save_upload_bytes(
-                content=jd_content,
-                original_filename=jd_file.filename,
-                destination_dir=self.settings.upload_absolute_dir,
-            )
             try:
-                resolved_jd_text = self.extractor.extract_text(jd_path)
+                resolved_jd_text = self.extractor.extract_text_from_bytes(jd_content, jd_file.filename)
             except Exception as exc:
                 raise InvalidFileError("Could not parse the uploaded job description file.") from exc
         else:
@@ -113,65 +102,76 @@ class AnalysisService:
             "report_url": f"{self.settings.api_v1_prefix}/analysis/{analysis_id}/report",
         }
 
-        analysis_json_path = self.storage.save_analysis_payload(analysis_id, response_payload)
-        report_path = self.reporter.build_report(analysis_id, response_payload)
+        report_bytes = self.reporter.build_report_bytes(response_payload)
 
-        created_at = datetime.now(timezone.utc).isoformat()
-        record = AnalysisRecord(
-            id=analysis_id,
+        jd_id = self.repo.save_job_description(
+            source_type=jd_source_type,
+            source_name=jd_source_name,
+            text=resolved_jd_text,
+            keywords=[str(keyword) for keyword in jd_data.get("keywords", [])],
+        )
+        resume_id = self.repo.save_resume_file(
+            analysis_id=analysis_id,
+            original_filename=resume_file.filename,
+            content_type=resume_file.content_type or "application/octet-stream",
+            file_bytes=resume_content,
+            extracted_text=resume_text,
+        )
+        report_id = self.repo.save_report_file(analysis_id=analysis_id, report_bytes=report_bytes)
+
+        self.repo.save_analysis(
+            analysis_id=analysis_id,
+            resume_id=resume_id,
+            jd_id=jd_id,
+            report_id=report_id,
             resume_filename=resume_file.filename,
             jd_source=jd_source,
             ats_score=score_result.final_score,
-            skill_match_score=score_result.skill_match,
-            keyword_match_score=score_result.keyword_match,
-            semantic_similarity_score=score_result.semantic_similarity,
-            experience_relevance_score=score_result.experience_relevance,
+            score_breakdown=response_payload["score_breakdown"],
             matched_skills_preview=", ".join(score_result.matched_skills[:8]),
             missing_skills_preview=", ".join(score_result.missing_skills[:8]),
-            report_path=str(report_path),
-            analysis_json_path=str(analysis_json_path),
-            created_at=created_at,
+            payload=response_payload,
         )
-        self.repo.save(record)
 
         return AnalysisResponse(**response_payload)
 
     def get_summary(self, analysis_id: str) -> AnalysisSummaryResponse | None:
-        record = self.repo.get(analysis_id)
+        record = self.repo.get_analysis(analysis_id)
         if record is None:
             return None
 
+        score_breakdown = record.get("score_breakdown") or {}
+        created_at = record.get("created_at")
+        if isinstance(created_at, datetime):
+            created_at_iso = created_at.astimezone(timezone.utc).isoformat()
+        else:
+            created_at_iso = str(created_at)
+
         return AnalysisSummaryResponse(
-            analysis_id=record.id,
-            resume_filename=record.resume_filename,
-            jd_source=record.jd_source,
-            ats_score=record.ats_score,
+            analysis_id=record["analysis_id"],
+            resume_filename=record["resume_filename"],
+            jd_source=record["jd_source"],
+            ats_score=float(record["ats_score"]),
             score_breakdown=ScoreBreakdown(
-                skill_match=record.skill_match_score,
-                keyword_match=record.keyword_match_score,
-                semantic_similarity=record.semantic_similarity_score,
-                experience_relevance=record.experience_relevance_score,
-                final_score=record.ats_score,
+                skill_match=float(score_breakdown.get("skill_match", 0)),
+                keyword_match=float(score_breakdown.get("keyword_match", 0)),
+                semantic_similarity=float(score_breakdown.get("semantic_similarity", 0)),
+                experience_relevance=float(score_breakdown.get("experience_relevance", 0)),
+                final_score=float(score_breakdown.get("final_score", record["ats_score"])),
             ),
-            report_url=f"{self.settings.api_v1_prefix}/analysis/{record.id}/report",
-            analysis_json_path=record.analysis_json_path,
-            created_at=record.created_at,
+            report_url=f"{self.settings.api_v1_prefix}/analysis/{record['analysis_id']}/report",
+            analysis_json_path=f"mongodb://{self.settings.mongodb_db_name}/analyses/{record['analysis_id']}",
+            created_at=created_at_iso,
         )
 
     def get_analysis_payload(self, analysis_id: str) -> dict | None:
-        summary = self.get_summary(analysis_id)
-        if summary is None:
+        record = self.repo.get_analysis(analysis_id)
+        if record is None:
             return None
-        json_path = Path(summary.analysis_json_path)
-        if not json_path.exists():
+        payload = record.get("payload")
+        if not isinstance(payload, dict):
             return None
-        return self.storage.load_json(json_path)
+        return payload
 
-    def get_report_path(self, analysis_id: str) -> Path | None:
-        summary = self.get_summary(analysis_id)
-        if summary is None:
-            return None
-        report_path = self.settings.report_absolute_dir / f"{analysis_id}.pdf"
-        if not report_path.exists():
-            return None
-        return report_path
+    def get_report_bytes(self, analysis_id: str) -> bytes | None:
+        return self.repo.get_report_bytes(analysis_id)

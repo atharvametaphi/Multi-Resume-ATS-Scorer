@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 
 import type { CandidateScreeningRecord } from "../../types/recruiter";
 import { Button } from "../ui/Button";
@@ -12,6 +12,7 @@ interface MultiResumeUploadPanelProps {
   isProcessing: boolean;
   onAddFiles: (files: File[]) => void;
   onAnalyzeCandidates: () => void;
+  onRemoveCandidate: (candidateId: string) => void;
 }
 
 const STATUS_LABEL: Record<CandidateScreeningRecord["status"], string> = {
@@ -25,7 +26,8 @@ export const MultiResumeUploadPanel = ({
   candidates,
   isProcessing,
   onAddFiles,
-  onAnalyzeCandidates
+  onAnalyzeCandidates,
+  onRemoveCandidate
 }: MultiResumeUploadPanelProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -56,12 +58,10 @@ export const MultiResumeUploadPanel = ({
   };
 
   return (
-    <Card className="border-border bg-card px-5 py-4">
+    <Card className="border-border/80 bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Multi Resume Upload
-        </p>
-        <Button variant="secondary" size="sm" onClick={onAnalyzeCandidates} disabled={!candidates.length || isProcessing}>
+        <p className="section-kicker">Multi Resume Upload</p>
+        <Button variant="default" size="sm" onClick={onAnalyzeCandidates} disabled={!candidates.length || isProcessing}>
           {isProcessing ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -87,15 +87,15 @@ export const MultiResumeUploadPanel = ({
           setDragActive(false);
           handleFiles(event.dataTransfer.files);
         }}
-        className={`mt-3.5 rounded-xl border border-dashed p-6 text-center transition ${
-          dragActive ? "border-primary bg-primary/8" : "border-border bg-muted/20"
+        className={`mt-4 rounded-2xl border border-dashed p-9 text-center transition ${
+          dragActive ? "border-primary/50 bg-primary/10" : "border-border/80 bg-muted/20"
         }`}
       >
-        <div className="mx-auto mb-2 inline-flex rounded-lg bg-primary/12 p-2.5">
-          <Upload className="h-4 w-4 text-primary" />
+        <div className="mx-auto mb-3 inline-flex rounded-xl bg-primary/10 p-3">
+          <Upload className="h-6 w-6 text-primary" />
         </div>
-        <p className="text-sm font-medium text-foreground">Drag and drop resumes</p>
-        <p className="mt-1 text-xs text-muted-foreground">or browse files (PDF, DOCX)</p>
+        <p className="text-base font-semibold text-foreground">Drag and drop resumes</p>
+        <p className="mt-1 text-sm text-muted-foreground">or browse files (PDF, DOCX)</p>
         <input
           ref={inputRef}
           type="file"
@@ -114,20 +114,29 @@ export const MultiResumeUploadPanel = ({
 
       <div className="mt-4">
         <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Uploaded Candidates</p>
-        <div className="mt-2 space-y-2">
+        <div className="mt-3 space-y-2.5">
           {candidates.length === 0 ? (
-            <p className="rounded-lg border border-border bg-muted/15 px-3 py-2 text-sm text-muted-foreground">
+            <p className="rounded-xl border border-border/70 bg-muted/15 px-3 py-2.5 text-sm text-muted-foreground">
               No resumes uploaded yet.
             </p>
           ) : (
             candidates.map((candidate) => (
-              <div key={candidate.id} className="rounded-lg border border-border bg-muted/15 px-3 py-2">
+              <div key={candidate.id} className="rounded-xl border border-border/70 bg-muted/15 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="inline-flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm text-foreground">{candidate.fileName}</span>
+                  <div className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-foreground">{candidate.fileName}</span>
+                    <span className="text-xs text-muted-foreground">{STATUS_LABEL[candidate.status]}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{STATUS_LABEL[candidate.status]}</span>
+
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    onClick={() => onRemoveCandidate(candidate.id)}
+                    aria-label={`Remove ${candidate.fileName}`}
+                    disabled={candidate.status === "processing"}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
                 <Progress
                   className="mt-2 h-1.5"

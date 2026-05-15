@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { CandidateAnalysisPanel } from "./components/recruiter/CandidateAnalysisPanel";
 import { CandidateComparisonTable } from "./components/recruiter/CandidateComparisonTable";
+import { CandidateInsightsCard } from "./components/recruiter/CandidateInsightsCard";
 import { MultiResumeUploadPanel } from "./components/recruiter/MultiResumeUploadPanel";
 import { RecruiterHeader } from "./components/recruiter/RecruiterHeader";
 import { RoleSelectionPanel } from "./components/recruiter/RoleSelectionPanel";
 import { Card } from "./components/ui/Card";
-import { ROLE_PRESETS } from "./data/rolePresets";
 import { useTheme } from "./hooks/useTheme";
-import { analyzeResume, getReportDownloadUrl } from "./services/api";
-import type { CandidateScreeningRecord } from "./types/recruiter";
+import { analyzeResume, fetchJobDescriptions, getReportDownloadUrl } from "./services/api";
+import type { CandidateScreeningRecord, RolePreset } from "./types/recruiter";
 
 const createCandidateId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -19,17 +19,48 @@ const createCandidateId = () => {
 };
 
 const App = () => {
-  const [selectedRoleId, setSelectedRoleId] = useState(ROLE_PRESETS[0].id);
+  const [roles, setRoles] = useState<RolePreset[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState("");
   const [candidates, setCandidates] = useState<CandidateScreeningRecord[]>([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRolesLoading, setIsRolesLoading] = useState(true);
+  const [rolesError, setRolesError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { isDark, setDarkMode } = useTheme();
 
+  useEffect(() => {
+    const loadRoles = async () => {
+      setIsRolesLoading(true);
+      setRolesError(null);
+      try {
+        const remoteRoles = await fetchJobDescriptions();
+        if (!remoteRoles.length) {
+          setRoles([]);
+          setSelectedRoleId("");
+          setRolesError("No job descriptions found in database.");
+          return;
+        }
+        setRoles(remoteRoles);
+        setSelectedRoleId((current) =>
+          current && remoteRoles.some((role) => role.id === current) ? current : remoteRoles[0].id
+        );
+      } catch {
+        setRoles([]);
+        setSelectedRoleId("");
+        setRolesError("Failed to load job descriptions from database.");
+      } finally {
+        setIsRolesLoading(false);
+      }
+    };
+
+    void loadRoles();
+  }, []);
+
   const selectedRole = useMemo(
-    () => ROLE_PRESETS.find((role) => role.id === selectedRoleId) ?? ROLE_PRESETS[0],
-    [selectedRoleId]
+    () => roles.find((role) => role.id === selectedRoleId) ?? null,
+    [roles, selectedRoleId]
   );
 
   const rankedCandidates = useMemo(() => {
@@ -88,6 +119,11 @@ const App = () => {
     });
   };
 
+  const removeCandidate = (candidateId: string) => {
+    setCandidates((previous) => previous.filter((candidate) => candidate.id !== candidateId));
+    setSelectedCandidateId((previous) => (previous === candidateId ? null : previous));
+  };
+
   const handleRoleChange = (roleId: string) => {
     setSelectedRoleId(roleId);
     setSelectedCandidateId(null);
@@ -104,7 +140,7 @@ const App = () => {
   };
 
   const runBatchAnalysis = async () => {
-    if (!candidates.length || isProcessing) {
+    if (!selectedRole || !candidates.length || isProcessing) {
       return;
     }
 
@@ -155,20 +191,28 @@ const App = () => {
     <div className="min-h-screen bg-background">
       <RecruiterHeader isDark={isDark} onToggleTheme={setDarkMode} />
 
-      <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
-          <section className="space-y-5">
-            <RoleSelectionPanel
-              roles={ROLE_PRESETS}
-              selectedRoleId={selectedRoleId}
-              onRoleChange={handleRoleChange}
-            />
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          {/* <h1 className="text-2xl font-semibold text-foreground">AI Resume Screening Dashboard</h1> */}
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[2.3fr_1fr]">
+          <section className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+              <RoleSelectionPanel
+                roles={roles}
+                selectedRoleId={selectedRoleId}
+                onRoleChange={handleRoleChange}
+              />
+              <CandidateInsightsCard candidates={candidates} />
+            </div>
 
             <MultiResumeUploadPanel
               candidates={candidates}
               isProcessing={isProcessing}
               onAddFiles={addFiles}
               onAnalyzeCandidates={runBatchAnalysis}
+              onRemoveCandidate={removeCandidate}
             />
 
             <CandidateComparisonTable
@@ -178,16 +222,26 @@ const App = () => {
             />
           </section>
 
-          <section>
-            <div className="lg:sticky lg:top-[4.5rem]">
-              <CandidateAnalysisPanel selectedCandidate={selectedCandidate} reportUrl={selectedReportUrl} />
-            </div>
-          </section>
+          <aside className="space-y-4 lg:sticky lg:top-20 lg:pr-1">
+            <CandidateAnalysisPanel selectedCandidate={selectedCandidate} reportUrl={selectedReportUrl} />
+          </aside>
         </div>
 
         {error ? (
-          <Card className="mt-4 border-primary/40 bg-primary/10 p-3">
+          <Card className="mt-5 border-primary/25 bg-primary/10 p-4">
             <p className="text-sm text-foreground">{error}</p>
+          </Card>
+        ) : null}
+
+        {rolesError ? (
+          <Card className="mt-5 border-primary/25 bg-primary/10 p-4">
+            <p className="text-sm text-foreground">{rolesError}</p>
+          </Card>
+        ) : null}
+
+        {isRolesLoading ? (
+          <Card className="mt-5 border-border/80 bg-card p-4">
+            <p className="text-sm text-muted-foreground">Loading job descriptions...</p>
           </Card>
         ) : null}
       </main>

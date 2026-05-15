@@ -1,0 +1,57 @@
+{
+  "analysis_id": "54d9473aa43644529629855546a33dc4",
+  "ats_score": 64.03,
+  "score_breakdown": {
+    "skill_match": 50.0,
+    "keyword_match": 50.0,
+    "semantic_similarity": 76.1,
+    "experience_relevance": 100.0,
+    "final_score": 64.03
+  },
+  "matched_skills": [
+    "SQL"
+  ],
+  "missing_skills": [
+    "Python"
+  ],
+  "semantic_similarity": 76.1,
+  "parsed_sections": {
+    "skills": [
+      "REST API",
+      "SQL"
+    ],
+    "experience": [
+      "Software Test Engineer",
+      "Reengineered and facilitated key QA methodologies, processes and metrics standards resulting in",
+      "Currently Working as Software Test Engineer at Tata Consultancy Services (TCS) Pune",
+      "B.E. (Bachelor of Electronics and Communication Engineer) from Priyadarshani",
+      "Institute of Engineering and Technology College, Under Nagpur university, Nagpur."
+    ],
+    "education": [
+      "B.E. (Bachelor of Electronics and Communication Engineer) from Priyadarshani",
+      "Institute of Engineering and Technology College, Under Nagpur university, Nagpur."
+    ],
+    "certifications": [
+      "Experience working in Agile, participated in Scrum Meetings to discuss the Test status report.",
+      "CERTIFICATION"
+    ],
+    "projects": [
+      "Knowledge in using SQL and UNIX as per requirement of project.",
+      "Project 1",
+      "Project Name: RBC",
+      "Project Details:",
+      "Project 2",
+      "Project Name : Convergent Charging System (CCS)",
+      "reservation. Built around the 3GPP specifications, the system supports multiple monetary and non",
+      "Understanding the SRS document and analyze the requirement. Performed testing implemented"
+    ],
+    "keyword_hits": []
+  },
+  "suggestions": [
+    {
+      "category": "Missing Keywords",
+      "message": "Add evidence-based mentions of: Python."
+    }
+  ],
+  "report_url": "/api/v1/analysis/54d9473aa43644529629855546a33dc4/report"
+}

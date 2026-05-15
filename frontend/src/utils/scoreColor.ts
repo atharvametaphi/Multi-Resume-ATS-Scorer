@@ -11,26 +11,26 @@ export const getScoreTone = (value: number) => {
   if (safeValue > 80) {
     return {
       tone: "high" as const,
-      hex: "#10B981",
-      barClassName: "bg-emerald-500",
-      textClassName: "text-emerald-400"
+      hex: "#7C78F2",
+      barClassName: "bg-primary",
+      textClassName: "text-primary"
     };
   }
 
   if (safeValue >= 40) {
     return {
       tone: "medium" as const,
-      hex: "#F59E0B",
-      barClassName: "bg-amber-500",
-      textClassName: "text-amber-400"
+      hex: "#918DF3",
+      barClassName: "bg-primary/80",
+      textClassName: "text-primary/90"
     };
   }
 
   return {
     tone: "low" as const,
-    hex: "#EF4444",
-    barClassName: "bg-red-500",
-    textClassName: "text-red-400"
+    hex: "#B9B6F8",
+    barClassName: "bg-primary/55",
+    textClassName: "text-primary/75"
   };
 };
 

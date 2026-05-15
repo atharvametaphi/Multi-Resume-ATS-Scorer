@@ -7,7 +7,7 @@ Full-stack monorepo for analyzing resumes against job descriptions with ATS-focu
 - Backend: FastAPI + Python service architecture
 - AI/NLP: sentence-transformers + spaCy
 - Resume Parsing: PyMuPDF + python-docx
-- Persistence: SQLite (hybrid cache with JSON/PDF artifacts)
+- Persistence: MongoDB (`ATS` database) + GridFS for resume/report files
 
 ## Features (v1)
 - Resume upload (`.pdf`, `.docx`)
@@ -35,7 +35,6 @@ backend/
     services/
     utils/
     data/skills_taxonomy.json
-  storage/{uploads,analyses,reports}
   tests/
 frontend/
   src/
@@ -93,6 +92,7 @@ cmd /c npm run dev
 
 ## API Endpoints
 - `GET /api/v1/health`
+- `GET /api/v1/job-descriptions`
 - `POST /api/v1/analyze` (multipart: `resume_file`, and either `jd_text` or `jd_file`)
 - `GET /api/v1/analysis/{analysis_id}`
 - `GET /api/v1/analysis/{analysis_id}/report`
@@ -123,6 +123,8 @@ cmd /c npm run build
 
 ## Notes
 - Scanned image PDFs (OCR) are out of scope for v1.
-- Full analysis payload is persisted as JSON under `backend/storage/analyses`.
-- PDF reports are generated under `backend/storage/reports`.
+- Analysis payloads are persisted in MongoDB collection `analyses`.
+- JDs are persisted in `job_descriptions`.
+- Resume files and report PDFs are stored in GridFS with metadata in `resumes` and `reports`.
+- Predefined recruiter JDs are seeded into MongoDB at startup and consumed by the frontend (no hardcoded JDs in UI).
 - On this machine, PowerShell script execution policy blocks `npm.ps1`; use `cmd /c npm ...` as shown above.

@@ -1,27 +1,16 @@
 from __future__ import annotations
 
-from pathlib import Path
+from io import BytesIO
 from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from app.core.config import get_settings
-
-
 class ReportService:
-    def __init__(self) -> None:
-        self.settings = get_settings()
-
-    def build_report(self, analysis_id: str, payload: dict[str, Any]) -> Path:
-        self.settings.report_absolute_dir.mkdir(parents=True, exist_ok=True)
-        target = self.settings.report_absolute_dir / f"{analysis_id}.pdf"
-        self._draw_pdf(target, payload)
-        return target
-
-    def _draw_pdf(self, file_path: Path, payload: dict[str, Any]) -> None:
-        c = canvas.Canvas(str(file_path), pagesize=A4)
+    def build_report_bytes(self, payload: dict[str, Any]) -> bytes:
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
         y = height - 60
 
@@ -85,6 +74,8 @@ class ReportService:
                 y -= 15
 
         c.save()
+        buffer.seek(0)
+        return buffer.read()
 
     @staticmethod
     def _wrap_line(text: str, max_chars: int) -> list[str]:
@@ -100,4 +91,3 @@ class ReportService:
         if current:
             lines.append(" ".join(current))
         return lines
-

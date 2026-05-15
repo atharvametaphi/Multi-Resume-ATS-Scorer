@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import type { AnalysisResponse, AnalyzeRequest } from "../types/analysis";
+import type { RolePreset } from "../types/recruiter";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.toString() ?? "http://localhost:8000/api/v1";
@@ -37,6 +38,30 @@ export const fetchAnalysis = async (analysisId: string) => {
   return response.data;
 };
 
+interface JobDescriptionApiResponse {
+  jd_id: string;
+  job_title: string;
+  experience: string;
+  location: string;
+  jd_text: string;
+  required_skills: string[];
+  preferred_skills: string[];
+  qualification: string[];
+}
+
+export const fetchJobDescriptions = async (): Promise<RolePreset[]> => {
+  const response = await apiClient.get<JobDescriptionApiResponse[]>("/job-descriptions");
+  return response.data.map((item) => ({
+    id: item.jd_id,
+    title: item.job_title,
+    jdText: item.jd_text,
+    requiredSkills: item.required_skills,
+    preferredSkills: item.preferred_skills,
+    experience: item.experience,
+    location: item.location,
+  }));
+};
+
 export const getReportDownloadUrl = (reportPath: string): string => {
   if (reportPath.startsWith("http://") || reportPath.startsWith("https://")) {
     return reportPath;
@@ -45,4 +70,3 @@ export const getReportDownloadUrl = (reportPath: string): string => {
   const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
   return `${base}${reportPath}`;
 };
-

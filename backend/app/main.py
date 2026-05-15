@@ -9,8 +9,8 @@ from fastapi.responses import JSONResponse
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exceptions import InvalidFileError, MissingJobDescriptionError, ResumeAnalyzerError
-from app.db.database import init_db
-from app.services.storage_service import StorageService
+from app.db.mongodb import init_mongodb
+from app.services.job_description_service import JobDescriptionService
 
 
 settings = get_settings()
@@ -18,8 +18,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    init_db()
-    StorageService().ensure_storage_dirs()
+    init_mongodb()
+    JobDescriptionService().seed_predefined_job_descriptions()
     yield
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)

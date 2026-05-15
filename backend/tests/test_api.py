@@ -22,6 +22,18 @@ def test_health_endpoint(client):
     assert response.json()["status"] == "ok"
 
 
+def test_job_descriptions_endpoint_returns_seeded_data(client):
+    response = client.get("/api/v1/job-descriptions")
+    assert response.status_code == 200
+    payload = response.json()
+    assert isinstance(payload, list)
+    assert len(payload) >= 3
+    titles = {item["job_title"] for item in payload}
+    assert "MERN Stack Developer" in titles
+    assert "QA Engineer / Software Test Engineer" in titles
+    assert "UI/UX Designer" in titles
+
+
 def test_analyze_resume_happy_path(client, sample_jd_text, monkeypatch):
     monkeypatch.setattr(analysis_service.scorer, "_semantic_similarity", lambda *_args, **_kwargs: 60.0)  # noqa: SLF001
     resume_pdf = _build_pdf_bytes("Python FastAPI SQL Docker Resume Experience 4 years")

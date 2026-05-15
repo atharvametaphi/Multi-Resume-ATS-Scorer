@@ -1,14 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
 
+import type { CandidateScreeningRecord } from "../../types/recruiter";
+import { getScoreTone, toSafePercent } from "../../utils/scoreColor";
 import { ATSGauge } from "../charts/ATSGauge";
-import { SkillProgressList } from "../charts/SkillProgressList";
-import { SkillsPieChart } from "../charts/SkillsPieChart";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Progress } from "../ui/progress";
-import type { CandidateScreeningRecord } from "../../types/recruiter";
-import { getScoreTone, toSafePercent } from "../../utils/scoreColor";
 
 interface CandidateAnalysisPanelProps {
   selectedCandidate: CandidateScreeningRecord | null;
@@ -32,148 +29,163 @@ const getMatchLabel = (score: number) => {
   return "Weak Match";
 };
 
-const getAnalysisPanelMessage = (candidate: CandidateScreeningRecord | null) => {
-  if (!candidate) {
-    return "Select a candidate from the comparison table to inspect detailed ATS analysis.";
-  }
-  if (candidate.status === "processing") {
-    return "Candidate analysis is in progress. This panel will update automatically after completion.";
-  }
-  if (candidate.status === "error") {
-    return candidate.error ?? "Candidate analysis failed. Retry from the upload panel.";
-  }
-  return "This candidate has not been analyzed yet.";
-};
+const Placeholder = ({ text }: { text: string }) => (
+  <p className="text-sm text-muted-foreground">{text}</p>
+);
+
+const SectionTitle = ({ title }: { title: string }) => (
+  <p className="section-kicker">{title}</p>
+);
 
 export const CandidateAnalysisPanel = ({ selectedCandidate, reportUrl }: CandidateAnalysisPanelProps) => {
   const analysis = selectedCandidate?.analysis;
 
+  const resumeStats = analysis
+    ? [
+        { label: "Skills", value: analysis.parsed_sections.skills.length },
+        { label: "Experience", value: analysis.parsed_sections.experience.length },
+        { label: "Education", value: analysis.parsed_sections.education.length },
+        { label: "Certifications", value: analysis.parsed_sections.certifications.length },
+        { label: "Projects", value: analysis.parsed_sections.projects.length },
+        { label: "Keyword Hits", value: analysis.parsed_sections.keyword_hits.length }
+      ]
+    : [];
+
   return (
-    <Card className="h-full border-border bg-card p-0">
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Candidate Analysis
-        </p>
-      </div>
-
-      <div className="space-y-4 p-4">
-        <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={selectedCandidate?.id ?? "analysis-empty"}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.2 }}
+        className="space-y-4"
+      >
+        <Card className="border-border/80 bg-card p-5">
+          <SectionTitle title="Candidate Analysis" />
           {!analysis ? (
-            <motion.div
-              key="empty-analysis"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="rounded-xl border border-border bg-muted/15 p-4 text-sm text-muted-foreground"
-            >
-              {getAnalysisPanelMessage(selectedCandidate)}
-            </motion.div>
+            <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <Placeholder text="Select a candidate from the table to view AI insights." />
+            </div>
           ) : (
-            <motion.div
-              key={selectedCandidate?.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
-              className="space-y-4"
-            >
-              <section className="rounded-xl border border-border bg-muted/15 p-3">
-                <ATSGauge score={analysis.ats_score} heightClassName="h-56" />
-                <div className="mt-1 text-center">
-                  <p className="text-2xl font-semibold text-foreground">{Math.round(analysis.ats_score)}%</p>
-                  <p className="text-sm text-muted-foreground">{getMatchLabel(analysis.ats_score)}</p>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-border bg-muted/15 p-3">
-                <p className="mb-3 text-xs uppercase tracking-[0.12em] text-muted-foreground">ATS Breakdown</p>
-                <div className="space-y-2.5">
-                  {BREAKDOWN_ROWS.map((row) => {
-                    const value = toSafePercent(analysis.score_breakdown[row.key]);
-                    const tone = getScoreTone(value);
-                    return (
-                      <div key={row.key}>
-                        <div className="mb-1 flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">{row.label}</span>
-                          <span className={`font-semibold ${tone.textClassName}`}>{Math.round(value)}%</span>
-                        </div>
-                        <Progress
-                          value={value}
-                          className="h-1.5"
-                          indicatorClassName={`${tone.barClassName} transition-all duration-500`}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-border bg-muted/15 p-3">
-                <p className="mb-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">Skill Match Analytics</p>
-                <SkillsPieChart
-                  matchedCount={analysis.matched_skills.length}
-                  missingCount={analysis.missing_skills.length}
-                />
-                <div className="mt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                  <span>Matched: {analysis.matched_skills.length}</span>
-                  <span>Missing: {analysis.missing_skills.length}</span>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-border bg-muted/15 p-3">
-                <p className="mb-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">Skill Match Progress</p>
-                <SkillProgressList
-                  matchedSkills={analysis.matched_skills}
-                  totalRequired={analysis.matched_skills.length + analysis.missing_skills.length}
-                />
-              </section>
-
-              <details className="group rounded-xl border border-border bg-muted/15 p-3">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Analysis Notes
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="mt-3 space-y-3 text-sm text-muted-foreground">
-                  <div>
-                    <p className="font-medium text-foreground">Missing Skills</p>
-                    <p className="mt-1">
-                      {analysis.missing_skills.length
-                        ? analysis.missing_skills.join(", ")
-                        : "No missing skills identified for this role."}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Suggestions</p>
-                    <ul className="mt-1 space-y-1">
-                      {analysis.suggestions.length ? (
-                        analysis.suggestions.slice(0, 5).map((suggestion, index) => (
-                          <li key={`${suggestion.category}-${index}`}>{suggestion.message}</li>
-                        ))
-                      ) : (
-                        <li>No additional suggestions generated.</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </details>
-
-              <section className="space-y-2">
-                {reportUrl ? (
-                  <a href={reportUrl} target="_blank" rel="noreferrer" className="block">
-                    <Button variant="secondary" className="w-full">
-                      Download PDF Report
-                    </Button>
-                  </a>
-                ) : (
-                  <Button variant="secondary" className="w-full" disabled>
+            <div className="mt-3 space-y-3">
+              <ATSGauge score={analysis.ats_score} heightClassName="h-40" />
+              <div className="border-t border-border/70 pt-3">
+                <p className="truncate text-sm font-medium text-foreground">{selectedCandidate?.fileName}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{getMatchLabel(analysis.ats_score)}</p>
+              </div>
+              {reportUrl ? (
+                <a href={reportUrl} target="_blank" rel="noreferrer" className="block">
+                  <Button variant="default" className="w-full">
                     Download PDF Report
                   </Button>
-                )}
-              </section>
-            </motion.div>
+                </a>
+              ) : (
+                <Button variant="default" className="w-full" disabled>
+                  Download PDF Report
+                </Button>
+              )}
+            </div>
           )}
-        </AnimatePresence>
-      </div>
-    </Card>
+        </Card>
+
+        <Card className="border-border/80 bg-card p-5">
+          <SectionTitle title="ATS Breakdown" />
+          <div className="mt-3 space-y-3">
+            {BREAKDOWN_ROWS.map((row) => {
+              const value = toSafePercent(analysis?.score_breakdown[row.key] ?? 0);
+              const tone = getScoreTone(value);
+              return (
+                <div key={row.key}>
+                  <div className="mb-1.5 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className={`font-semibold ${tone.textClassName}`}>{Math.round(value)}%</span>
+                  </div>
+                  <Progress
+                    value={value}
+                    className="h-1.5"
+                    indicatorClassName={`${tone.barClassName} transition-all duration-500`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card className="border-border/80 bg-card p-5">
+          <SectionTitle title="Matched Skills" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {analysis?.matched_skills.length ? (
+              analysis.matched_skills.slice(0, 14).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full border border-border/80 bg-muted/25 px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  {skill}
+                </span>
+              ))
+            ) : (
+              <Placeholder text="No matched skills available." />
+            )}
+          </div>
+        </Card>
+
+        <Card className="border-border/80 bg-card p-5">
+          <SectionTitle title="Missing Skills" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            {analysis?.missing_skills.length ? (
+              analysis.missing_skills.slice(0, 14).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full border border-border/80 bg-muted/25 px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  {skill}
+                </span>
+              ))
+            ) : (
+              <Placeholder text="No missing skills identified." />
+            )}
+          </div>
+        </Card>
+
+        <Card className="border-border/80 bg-card p-5">
+          <SectionTitle title="AI Recommendation" />
+          <ul className="mt-3 space-y-2">
+            {analysis?.suggestions.length ? (
+              analysis.suggestions.slice(0, 5).map((suggestion, index) => (
+                <li
+                  key={`${suggestion.category}-${index}`}
+                  className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground"
+                >
+                  {suggestion.message}
+                </li>
+              ))
+            ) : (
+              <li className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+                <Placeholder text="No recommendations generated yet." />
+              </li>
+            )}
+          </ul>
+        </Card>
+
+        <Card className="border-border/80 bg-card p-5">
+          <SectionTitle title="Resume Insights" />
+          {analysis ? (
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {resumeStats.map((item) => (
+                <div key={item.label} className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">{item.label}</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <Placeholder text="Resume statistics appear after candidate analysis is selected." />
+            </div>
+          )}
+        </Card>
+      </motion.div>
+    </AnimatePresence>
   );
 };

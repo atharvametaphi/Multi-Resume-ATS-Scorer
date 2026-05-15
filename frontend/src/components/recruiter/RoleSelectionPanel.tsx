@@ -13,40 +13,52 @@ export const RoleSelectionPanel = ({
   selectedRoleId,
   onRoleChange
 }: RoleSelectionPanelProps) => {
-  const selectedRole = roles.find((role) => role.id === selectedRoleId) ?? roles[0];
+  const selectedRole = roles.find((role) => role.id === selectedRoleId) ?? roles[0] ?? null;
+  const hasRoles = roles.length > 0;
 
   return (
-    <Card className="border-border bg-card px-5 py-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Role Selection
-      </p>
+    <Card className="h-full border-border/80 bg-card p-6">
+      <p className="section-kicker">Role Selection</p>
 
-      <div className="mt-3.5">
-        <label htmlFor="role-select" className="mb-1 block text-sm font-medium text-foreground">
-          Role Dropdown
+      <div className="mt-4">
+        <label htmlFor="role-select" className="mb-2 block text-sm font-medium text-foreground">
+          Select Job Role
         </label>
         <select
           id="role-select"
           value={selectedRoleId}
           onChange={(event) => onRoleChange(event.target.value)}
-          className="h-10 w-full rounded-xl border border-border bg-muted/25 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/60"
+          disabled={!hasRoles}
+          className="h-11 w-full rounded-xl border border-border/80 bg-muted/20 px-3.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
-          {roles.map((role) => (
-            <option key={role.id} value={role.id} className="bg-card text-foreground">
-              {role.title}
-            </option>
-          ))}
+          {hasRoles ? (
+            roles.map((role) => (
+              <option key={role.id} value={role.id} className="bg-card text-foreground">
+                {role.title}
+              </option>
+            ))
+          ) : (
+            <option value="">No job descriptions available</option>
+          )}
         </select>
       </div>
 
-      <div className="mt-3.5">
+      <div className="mt-5">
         <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Required Skills</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {selectedRole.requiredSkills.map((skill) => (
-            <Badge key={skill} variant="outline" className="border-border bg-muted/25 px-2.5 py-1 text-[11px]">
-              {skill}
-            </Badge>
-          ))}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {selectedRole ? (
+            selectedRole.requiredSkills.map((skill) => (
+              <Badge
+                key={skill}
+                variant="outline"
+                className="rounded-full border-border/70 bg-muted/45 px-3 py-1 text-xs font-medium text-foreground"
+              >
+                {skill}
+              </Badge>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">Required skills will appear after JDs are loaded.</p>
+          )}
         </div>
       </div>
     </Card>

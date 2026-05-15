@@ -24,14 +24,12 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     cors_origins: str = "http://localhost:5173"
 
-    sqlite_db_path: str = "backend/app.db"
+    mongodb_uri: str = "mongodb://localhost:27017/"
+    mongodb_db_name: str = "ATS"
+    mongodb_connect_timeout_ms: int = 5000
     max_upload_size_mb: int = 5
     spacy_model: str = "en_core_web_sm"
     sentence_model: str = "sentence-transformers/all-MiniLM-L6-v2"
-
-    upload_dir: str = "backend/storage/uploads"
-    analysis_dir: str = "backend/storage/analyses"
-    report_dir: str = "backend/storage/reports"
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -41,24 +39,7 @@ class Settings(BaseSettings):
         path = Path(relative_or_absolute_path)
         return path if path.is_absolute() else ROOT_DIR / path
 
-    @property
-    def sqlite_db_absolute_path(self) -> Path:
-        return self.to_absolute_path(self.sqlite_db_path)
-
-    @property
-    def upload_absolute_dir(self) -> Path:
-        return self.to_absolute_path(self.upload_dir)
-
-    @property
-    def analysis_absolute_dir(self) -> Path:
-        return self.to_absolute_path(self.analysis_dir)
-
-    @property
-    def report_absolute_dir(self) -> Path:
-        return self.to_absolute_path(self.report_dir)
-
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

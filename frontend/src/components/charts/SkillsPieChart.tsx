@@ -5,7 +5,7 @@ interface SkillsPieChartProps {
   missingCount: number;
 }
 
-const COLORS = ["#10B981", "#EF4444"];
+const COLORS = ["#7C78F2", "#D6DAE3"];
 
 export const SkillsPieChart = ({ matchedCount, missingCount }: SkillsPieChartProps) => {
   const data = [

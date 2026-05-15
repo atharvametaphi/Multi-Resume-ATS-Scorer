@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 
 import fitz
@@ -27,9 +28,30 @@ class ExtractionService:
         return normalize_text(text)
 
     @staticmethod
+    def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
+        suffix = Path(filename).suffix.lower()
+        if suffix == ".pdf":
+            text = ExtractionService._extract_from_pdf_bytes(file_bytes)
+        elif suffix == ".docx":
+            text = ExtractionService._extract_from_docx_bytes(file_bytes)
+        elif suffix == ".txt":
+            text = file_bytes.decode("utf-8", errors="ignore")
+        else:
+            raise InvalidFileError(f"Unsupported extraction type: {suffix or 'unknown'}")
+        return normalize_text(text)
+
+    @staticmethod
     def _extract_from_pdf(file_path: Path) -> str:
         pages: list[str] = []
         with fitz.open(file_path) as doc:
+            for page in doc:
+                pages.append(page.get_text("text"))
+        return "\n".join(pages)
+
+    @staticmethod
+    def _extract_from_pdf_bytes(file_bytes: bytes) -> str:
+        pages: list[str] = []
+        with fitz.open(stream=file_bytes, filetype="pdf") as doc:
             for page in doc:
                 pages.append(page.get_text("text"))
         return "\n".join(pages)
@@ -40,3 +62,8 @@ class ExtractionService:
         paragraphs = [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
         return "\n".join(paragraphs)
 
+    @staticmethod
+    def _extract_from_docx_bytes(file_bytes: bytes) -> str:
+        doc = Document(BytesIO(file_bytes))
+        paragraphs = [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
+        return "\n".join(paragraphs)

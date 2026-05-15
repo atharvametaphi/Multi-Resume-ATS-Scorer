@@ -40,7 +40,7 @@ export default {
         danger: "hsl(var(--danger))"
       },
       boxShadow: {
-        soft: "0 8px 30px -18px rgba(15, 23, 42, 0.35)",
+        soft: "0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06)",
         glow: "0 0 0 1px rgba(129, 140, 248, 0.24), 0 30px 60px -35px rgba(99, 102, 241, 0.65)"
       },
       backdropBlur: {

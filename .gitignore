@@ -26,12 +26,6 @@ frontend/dist/
 # frontend/.env
 
 # Runtime artifacts
-backend/storage/uploads/*
-backend/storage/analyses/*
-backend/storage/reports/*
-!backend/storage/uploads/.gitkeep
-!backend/storage/analyses/.gitkeep
-!backend/storage/reports/.gitkeep
 backend/app.db
 *.log
 

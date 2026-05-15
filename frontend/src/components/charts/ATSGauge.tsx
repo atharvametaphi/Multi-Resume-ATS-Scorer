@@ -43,8 +43,8 @@ export const ATSGauge = ({ score, heightClassName = "h-72" }: ATSGaugeProps) => 
 
   return (
     <div className={`${heightClassName} flex w-full items-center justify-center`} aria-label="ATS score gauge">
-      <div className="relative aspect-square w-full max-w-[290px]">
-        <svg viewBox="0 0 100 100" className="h-full w-full">
+      <div className="relative aspect-square w-full max-w-[240px]">
+        <svg viewBox="-6 -6 112 112" className="h-full w-full">
           <g transform={`rotate(${GAUGE_START_ROTATION} 50 50)`}>
             <circle
               cx="50"
@@ -52,7 +52,7 @@ export const ATSGauge = ({ score, heightClassName = "h-72" }: ATSGaugeProps) => 
               r={GAUGE_RADIUS}
               fill="none"
               stroke="rgba(148,163,184,0.25)"
-              strokeWidth="10"
+              strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${TRACK_LENGTH} ${CIRCUMFERENCE}`}
             />
@@ -62,7 +62,7 @@ export const ATSGauge = ({ score, heightClassName = "h-72" }: ATSGaugeProps) => 
               r={GAUGE_RADIUS}
               fill="none"
               stroke={tone.hex}
-              strokeWidth="10"
+              strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${valueLength} ${CIRCUMFERENCE}`}
             />
@@ -70,7 +70,7 @@ export const ATSGauge = ({ score, heightClassName = "h-72" }: ATSGaugeProps) => 
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-5xl font-bold leading-none" style={{ color: tone.hex }}>
+          <p className="text-4xl font-bold leading-none" style={{ color: tone.hex }}>
             {`${Math.round(animatedScore)}%`}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">ATS Compatibility</p>

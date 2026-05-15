@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
-from app.db.database import init_db
+from app.db.mongodb import init_mongodb
 from app.main import app
-from app.services.storage_service import StorageService
 
 
 @pytest.fixture(scope="session", autouse=True)
 def initialize_backend():
-    init_db()
-    StorageService().ensure_storage_dirs()
+    init_mongodb()
     yield
 
 
@@ -49,4 +45,3 @@ def sample_jd_text() -> str:
 Required skills: Python, FastAPI, SQL, AWS, Docker.
 Must have 3 years experience building REST APIs.
 """
-
